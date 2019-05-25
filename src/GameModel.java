@@ -3,10 +3,10 @@ import java.util.Observable;
 import java.util.Random;
 
 public class GameModel extends Observable {
-    ArrayList<Player> players;
+    ArrayList<Player> players = new ArrayList<Player>();
     Yut yut = new Yut();
     int turn;
-    ArrayList<GamePiece> selectedPieces;
+    ArrayList<GamePiece> selectedPieces = new ArrayList<GamePiece>();
     GameBoard gameBoard = new GameBoard();
 
     public void createPlayer(int playerNum) {
@@ -21,23 +21,41 @@ public class GameModel extends Observable {
         }
     }
 
-    public void start(){
+    public void init(int playerNum, int pieceNum){
+        createPlayer(playerNum);
+        createPiece(pieceNum);
         turn = 0;
+    }
+    public void start(){
+
         players.get(turn).startTurn();
     }
 
     /*윷 던지는 버튼이 클릭되었을 때*/
-    public void yutClickEvent(){
+    public void randomYutClickEvent(){
         Player currentPlayer = players.get(turn);
         if(currentPlayer.phase == Phase.THROW_YUT_PHASE){
+            currentPlayer.throwCnt--;
             int yutNum = yut.throwYut();
+            currentPlayer.yutNums.add(yutNum);
+            if(yutNum < 4){
+                currentPlayer.phase = Phase.CHOOSE_PIECE_PHASE;
+            }
+
+        }
+    }
+
+    public void selectYutClickEvent(int select){
+        Player currentPlayer = players.get(turn);
+        if(currentPlayer.phase == Phase.THROW_YUT_PHASE){
+            currentPlayer.throwCnt--;
+            int yutNum = select;
             currentPlayer.yutNums.add(yutNum);
             if(yutNum < 4){
                 currentPlayer.phase = Phase.CHOOSE_PIECE_PHASE;
             }
         }
     }
-
     /*아직 보드에 올라가지 않은 게임말이 클릭되었을 때*/
     public void pieceOutsideBoardClickEvent(GamePiece gamePiece){
         Player currentPlayer = gamePiece.owner;
@@ -60,10 +78,10 @@ public class GameModel extends Observable {
     public void nodeClickEvent(Node node) {
         Player currentPlayer = players.get(turn);
 
-        /*움직일 노드를 고르는 단계일 때*/
+        /*움직일 말을 고르는 단계일 때*/
         if(currentPlayer.phase == Phase.CHOOSE_PIECE_PHASE){
             /*빈 노드를 선택한 경우*/
-            if(node.getGamePiecesOn() == null){
+            if(node.getGamePiecesOn() == null || node.getGamePiecesOn().size() < 1){
                 return;
             }
             /*자기 말이 있는 노드를 선택한 경우*/
@@ -80,10 +98,10 @@ public class GameModel extends Observable {
         /*말이 움직이는 단계일 때*/
         else if(currentPlayer.phase == Phase.MOVE_PIECE_PHASE){
             /*이동할 수 있는 칸인 경우*/
-            if(selectedPieces.get(0).getMovableNodes(currentPlayer.yutNums).contains(node) == true){
+            if(gameBoard.getMovableNode(selectedPieces.get(0).getNode(),currentPlayer.yutNums.get(0)) == node){
                 /*차이 어떻게 구하지*/
-                currentPlayer.yutNums.remove((Integer));
-                if(node.getGamePiecesOn() == null){
+                currentPlayer.yutNums.remove(0);
+                if(node.getGamePiecesOn() == null || node.getGamePiecesOn().size() < 1){
                     /*그냥 이동하는 경우*/
                     for(GamePiece piece : selectedPieces){
                         piece.move(node);
@@ -148,8 +166,8 @@ enum Phase {
 class Player{
     Phase phase;
     int playerID;
-    ArrayList<Integer> yutNums;
-    ArrayList<GamePiece> gamePieces;
+    ArrayList<Integer> yutNums = new ArrayList<Integer>();
+    ArrayList<GamePiece> gamePieces = new ArrayList<GamePiece>();
     int throwCnt;
 
     Player(int playerID){
@@ -177,17 +195,69 @@ class Player{
 }
 
 class GameBoard{
-    public Node[] Node = new Node[29];
+    public Node[] nodes = new Node[31];
+    final private Node[][] movableNodeTable = new Node[31][];
+
+    public Node getMovableNode(Node currentNode, int yutNum){
+        if(yutNum < 0)
+            yutNum = 0;
+        if(currentNode == null || currentNode == nodes[0])
+            return movableNodeTable[0][yutNum];
+        System.out.println(currentNode.nodeID);
+        return movableNodeTable[currentNode.nodeID][yutNum];
+    }
+
+    GameBoard(){
+        for(int i = 0; i < nodes.length; i++){
+            nodes[i] = new Node(i);
+        }
+        /*
+        게임판 위에 있는 것은 1번부터 29번째 노드
+        보드에 아직 안올라간상태:0
+        완주한 상태: 30
+        */
+        /*0일때 백도의 경우 예외처리 해줘야함*/
+        movableNodeTable[0] = new Node[]{nodes[0],nodes[1],nodes[2],nodes[3],nodes[4],nodes[5]};
+
+        movableNodeTable[1] = new Node[]{nodes[20],nodes[2],nodes[3],nodes[4],nodes[5],nodes[6]};
+        movableNodeTable[2] = new Node[]{nodes[1],nodes[3],nodes[4],nodes[5],nodes[6],nodes[7]};
+        movableNodeTable[3] = new Node[]{nodes[2],nodes[4],nodes[5],nodes[6],nodes[7],nodes[8]};
+        movableNodeTable[4] = new Node[]{nodes[3],nodes[5],nodes[6],nodes[7],nodes[8],nodes[9]};
+        movableNodeTable[5] = new Node[]{nodes[4],nodes[21],nodes[22],nodes[25],nodes[26],nodes[27]};
+        movableNodeTable[6] = new Node[]{nodes[5],nodes[7],nodes[8],nodes[9],nodes[10],nodes[11]};
+        movableNodeTable[7] = new Node[]{nodes[6],nodes[8],nodes[9],nodes[10],nodes[11],nodes[12]};
+        movableNodeTable[8] = new Node[]{nodes[7],nodes[9],nodes[10],nodes[11],nodes[12],nodes[13]};
+        movableNodeTable[9] = new Node[]{nodes[8],nodes[10],nodes[11],nodes[12],nodes[13],nodes[14]};
+        movableNodeTable[10] = new Node[]{nodes[9],nodes[23],nodes[24],nodes[25],nodes[28],nodes[29]};
+        movableNodeTable[11] = new Node[]{nodes[10],nodes[12],nodes[13],nodes[14],nodes[15],nodes[16]};
+        movableNodeTable[12] = new Node[]{nodes[11],nodes[13],nodes[14],nodes[15],nodes[16],nodes[17]};
+        movableNodeTable[13] = new Node[]{nodes[12],nodes[14],nodes[15],nodes[16],nodes[17],nodes[18]};
+        movableNodeTable[14] = new Node[]{nodes[13],nodes[15],nodes[16],nodes[17],nodes[18],nodes[19]};
+        movableNodeTable[15] = new Node[]{nodes[14],nodes[16],nodes[17],nodes[18],nodes[19],nodes[20]};
+        movableNodeTable[16] = new Node[]{nodes[15],nodes[17],nodes[18],nodes[19],nodes[20],nodes[30]};
+        movableNodeTable[17] = new Node[]{nodes[16],nodes[18],nodes[19],nodes[20],nodes[30],nodes[30]};
+        movableNodeTable[18] = new Node[]{nodes[17],nodes[19],nodes[20],nodes[30],nodes[30],nodes[30]};
+        movableNodeTable[19] = new Node[]{nodes[18],nodes[20],nodes[30],nodes[30],nodes[30],nodes[30]};
+        movableNodeTable[20] = new Node[]{nodes[19],nodes[30],nodes[30],nodes[30],nodes[30],nodes[30]};
+
+        movableNodeTable[21] = new Node[]{nodes[5],nodes[22],nodes[25],nodes[26],nodes[27],nodes[15]};
+        movableNodeTable[22] = new Node[]{nodes[21],nodes[25],nodes[26],nodes[27],nodes[15],nodes[16]};
+        movableNodeTable[23] = new Node[]{nodes[10],nodes[24],nodes[25],nodes[28],nodes[29],nodes[20]};
+        movableNodeTable[24] = new Node[]{nodes[23],nodes[25],nodes[28],nodes[29],nodes[20],nodes[30]};
+        movableNodeTable[25] = new Node[]{nodes[22],nodes[28],nodes[29],nodes[20],nodes[30],nodes[30]};
+        movableNodeTable[26] = new Node[]{nodes[25],nodes[27],nodes[15],nodes[16],nodes[17],nodes[18]};
+        movableNodeTable[27] = new Node[]{nodes[26],nodes[15],nodes[16],nodes[17],nodes[18],nodes[19]};
+        movableNodeTable[28] = new Node[]{nodes[25],nodes[29],nodes[20],nodes[30],nodes[30],nodes[30]};
+        movableNodeTable[29] = new Node[]{nodes[28],nodes[20],nodes[30],nodes[30],nodes[30],nodes[30]};
+    }
 }
 
 class Node{
-    private ArrayList<GamePiece> gamePiecesOn;
-
-    Node(){
-        gamePiecesOn = null;
-    }
-    public void setGamePiecesOn(ArrayList<GamePiece> gamePieces) {
-        this.gamePiecesOn = gamePieces;
+    public int nodeID;
+    public ArrayList<GamePiece> gamePiecesOn;
+    Node(int nodeID){
+        this.nodeID = nodeID;
+        gamePiecesOn = new ArrayList<GamePiece>();
     }
 
     public ArrayList<GamePiece> getGamePiecesOn() {
@@ -195,43 +265,35 @@ class Node{
     }
 }
 
-enum Status {
-    OFF_BOARD(0),
-    ON_BOARD(1),
-    FINISHED(2);
-
-    private int status;
-    Status(int status){
-        this.status = status;
-    }
-}
-
 class GamePiece{
-    public Status status;
     public Player owner;
     public int pieceID;
-    public Node node;
+    private Node node;
     GamePiece(Player owner, int pieceID){
-        status = Status.OFF_BOARD;
         this.owner = owner;
         this.pieceID  = pieceID;
         node = null;
     }
 
-    public ArrayList<Node> getMovableNodes(ArrayList<Integer> yutNums){
-        return;
+    public Node getNode() {
+        return node;
     }
 
     public void move(Node nextNode){
-        node.getGamePiecesOn().remove(this);
         nextNode.getGamePiecesOn().add(this);
+        if(node == null) {
+            node = nextNode;
+            return;
+        }
+        node.getGamePiecesOn().remove(this);
         node = nextNode;
     }
 
     public void caught(){
+        if(node == null)
+            return;
         node.getGamePiecesOn().remove(this);
-        node = null;
-        this.status = Status.OFF_BOARD;
+        this.node = null;
     }
 }
 
