@@ -174,7 +174,7 @@ public class GameModel extends Observable {
                     currentPlayer.throwCnt++;
                 }
 
-                /*움직이고 나서*/
+                /*움직이고 나서 할 행동*/
                 selectedPieces = null;
                 if(currentPlayer.throwCnt == 0 && currentPlayer.yutNums.size() == 0){
                     changeTurn();
