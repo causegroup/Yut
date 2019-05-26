@@ -11,7 +11,7 @@ public class GameController {
 
         while(true){
             System.out.println("========================================");
-            System.out.println(gameModel.turn);
+            System.out.println("player " + (gameModel.getTurn() + 1) + " 's turn");
             System.out.println("----------------------------------------");
             System.out.printf("%d\t %d\t %d\t %d\t %d\t %d\t \n",nc(10),nc(9),nc(8),nc(7),nc(6),nc(5));
             System.out.printf("%d\t %d\t  \t  \t %d\t %d\t \n",nc(11),nc(23),nc(21),nc(4));
@@ -20,20 +20,20 @@ public class GameController {
             System.out.printf("%d\t  \t %d\t %d\t  \t %d\t \n",nc(13),nc(26),nc(28),nc(2));
             System.out.printf("%d\t %d\t  \t  \t %d\t %d\t \n",nc(14),nc(27),nc(29),nc(1));
             System.out.printf("%d\t %d\t %d\t %d\t %d\t %d\t \n",nc(15),nc(16),nc(17),nc(18),nc(19),nc(20));
-            if(gameModel.players.get(gameModel.turn).yutNums.size() > 0) {
+            if(gameModel.getYutNums().size() > 0) {
                 System.out.println("------------------------------------");
-                System.out.println(gameModel.players.get(gameModel.turn).yutNums.toString());
+                System.out.println(gameModel.getYutNums().toString());
             }
 
-            System.out.println("---------------------------------------");
-            System.out.println(gameModel.players.get(gameModel.turn).phase);
-            try {
-                System.out.println(gameModel.gameBoard.getMovableNode(gameModel.selectedPieces.get(0).getNode(), gameModel.players.get(gameModel.turn).yutNums.get(0)).nodeID);
-
-            }catch (Exception e){}
-            System.out.println("---------------------------------------------");
+            System.out.println("----------------------------------------");
+            System.out.println(gameModel.getPhase());
+            System.out.println("----------------------------------------");
+            for(Node node : gameModel.getMovableNodes()){
+                System.out.print(node.nodeID + " ");
+            }
+            System.out.println("----------------------------------------");
             int input = scan.nextInt();
-            System.out.println("===========================================");
+            System.out.println("========================================");
 
             switch (input){
                 case 51: case 52: case 53: case 54:

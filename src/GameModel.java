@@ -9,6 +9,30 @@ public class GameModel extends Observable {
     ArrayList<GamePiece> selectedPieces = new ArrayList<GamePiece>();
     GameBoard gameBoard = new GameBoard();
 
+    public int getTurn(){
+        return turn;
+    }
+    public Phase getPhase(){
+        return players.get(turn).phase;
+    }
+    public ArrayList<Node> getMovableNodes(){
+        if(players.get(turn).phase != Phase.MOVE_PIECE_PHASE){
+            return new ArrayList<Node>();
+        }
+        try {
+            return gameBoard.movableNodes(selectedPieces.get(0).getNode(),players.get(turn).yutNums);
+        }catch (Exception e){
+            return new ArrayList<Node>();
+        }
+    }
+
+    public ArrayList<Integer> getYutNums(){
+        if(players.get(turn).yutNums.size() > 0)
+            return  players.get(turn).yutNums;
+        else
+            return new ArrayList<Integer>();
+    }
+
     public void createPlayer(int playerNum) {
         for(int i = 0; i < playerNum; i++) {
             players.add(new Player(i));
@@ -25,6 +49,11 @@ public class GameModel extends Observable {
         createPlayer(playerNum);
         createPiece(pieceNum);
         turn = 0;
+        for(Player player: players){
+            for(GamePiece piece : player.gamePieces){
+                piece.setNode(gameBoard.nodes[0]);
+            }
+        }
     }
     public void start(){
 
@@ -98,23 +127,27 @@ public class GameModel extends Observable {
         /*말이 움직이는 단계일 때*/
         else if(currentPlayer.phase == Phase.MOVE_PIECE_PHASE){
             /*이동할 수 있는 칸인 경우*/
-            if(gameBoard.getMovableNode(selectedPieces.get(0).getNode(),currentPlayer.yutNums.get(0)) == node){
-                /*차이 어떻게 구하지*/
-                currentPlayer.yutNums.remove(0);
+            if(gameBoard.movableNodes(selectedPieces.get(0).getNode(),currentPlayer.yutNums).contains(node)){
+                /*역으로 윷 숫자 계산*/
+                int selectedYutNum = gameBoard.reCalculateYutNum(selectedPieces.get(0).getNode(), node);
+                currentPlayer.yutNums.remove(currentPlayer.yutNums.indexOf(selectedYutNum));
+
+                /*완주하는 경우*/
+
+                /*그냥 이동하는 경우*/
                 if(node.getGamePiecesOn() == null || node.getGamePiecesOn().size() < 1){
-                    /*그냥 이동하는 경우*/
                     for(GamePiece piece : selectedPieces){
                         piece.move(node);
                     }
                 }
+                /*업는 경우*/
                 else if(node.getGamePiecesOn().get(0).owner == currentPlayer){
-                    /*업는 경우*/
                     for(GamePiece piece : selectedPieces){
                         piece.move(node);
                     }
                 }
+                /*상대의 말을 잡은 경우*/
                 else if(node.getGamePiecesOn().get(0).owner != currentPlayer){
-                    /*상대의 말을 잡은 경우*/
                     ArrayList<GamePiece> caughtPieces = node.getGamePiecesOn();
                     for(GamePiece caughtPiece : caughtPieces){
                         caughtPiece.caught();
@@ -198,13 +231,29 @@ class GameBoard{
     public Node[] nodes = new Node[31];
     final private Node[][] movableNodeTable = new Node[31][];
 
-    public Node getMovableNode(Node currentNode, int yutNum){
-        if(yutNum < 0)
-            yutNum = 0;
-        if(currentNode == null || currentNode == nodes[0])
-            return movableNodeTable[0][yutNum];
-        System.out.println(currentNode.nodeID);
-        return movableNodeTable[currentNode.nodeID][yutNum];
+    public ArrayList<Node> movableNodes(Node currentNode, ArrayList<Integer> yutNums){
+        ArrayList <Node> nodeList = new ArrayList<Node>();
+        for(int yutNum : yutNums) {
+            if (yutNum < 0)
+                yutNum = 0;
+            if (currentNode == null || currentNode == nodes[0]){
+                nodeList.add(movableNodeTable[0][yutNum]);
+            }
+            else{
+                nodeList.add(movableNodeTable[currentNode.nodeID][yutNum]);
+            }
+        }
+        return nodeList;
+    }
+
+    public int reCalculateYutNum(Node currentNode, Node nextNode){
+        ArrayList<Node> nodes = new ArrayList<Node>();
+        for(Node node : movableNodeTable[currentNode.nodeID]){
+            nodes.add(node);
+        }
+        int yutNum = nodes.indexOf(nextNode);
+        if(yutNum == 0) yutNum = -1;
+        return yutNum;
     }
 
     GameBoard(){
@@ -273,6 +322,10 @@ class GamePiece{
         this.owner = owner;
         this.pieceID  = pieceID;
         node = null;
+    }
+
+    public void setNode(Node node){
+        this.node = node;
     }
 
     public Node getNode() {
