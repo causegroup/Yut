@@ -136,7 +136,8 @@ public class GameModel extends Observable {
 
                 /*그냥 이동하는 경우*/
                 if(node.getGamePiecesOn() == null || node.getGamePiecesOn().size() < 1){
-                    for(GamePiece piece : selectedPieces){
+                    /*그냥 이동하는 경우*/
+c                    for(GamePiece piece : selectedPieces){
                         piece.move(node);
                     }
                 }
