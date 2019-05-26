@@ -22,19 +22,29 @@ public class GameController {
             System.out.printf("%d\t %d\t %d\t %d\t %d\t %d\t \n",nc(15),nc(16),nc(17),nc(18),nc(19),nc(20));
             if(gameModel.getYutNums().size() > 0) {
                 System.out.println("------------------------------------");
-                System.out.println(gameModel.getYutNums().toString());
+                System.out.println("윷 숫자 : " + gameModel.getYutNums().toString());
             }
 
             System.out.println("----------------------------------------");
-            System.out.println(gameModel.getPhase());
+            System.out.println("현재 페이즈: " + gameModel.getPhase());
             System.out.println("----------------------------------------");
             for(Node node : gameModel.getMovableNodes()){
                 System.out.print(node.nodeID + " ");
             }
+            System.out.println();
             System.out.println("----------------------------------------");
             int input = scan.nextInt();
             System.out.println("========================================");
 
+
+            /*
+            * 테스트를 위한 입력부분입니다 실제 구현할 때 숫자는 아무 신경 안쓰셔도됩니다.
+            * 51~54: 게임판에 올라가지 않은 플레이어1의 말 선택
+            * 61~64: 게임판에 올라가지 않은 플레이어2의 말 선택
+            * 69: 백도, 71~75: 도 개 걸 윷 모
+            * 77: 랜덤 윷 던지기
+            * 버튼에 바인딩하시면 됨
+            * */
             switch (input){
                 case 51: case 52: case 53: case 54:
                     gameModel.pieceOutsideBoardClickEvent(gameModel.players.get(0).gamePieces.get(input-50));

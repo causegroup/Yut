@@ -62,31 +62,34 @@ public class GameModel extends Observable {
 
     /*윷 던지는 버튼이 클릭되었을 때*/
     public void randomYutClickEvent(){
-        Player currentPlayer = players.get(turn);
-        if(currentPlayer.phase == Phase.THROW_YUT_PHASE){
-            currentPlayer.throwCnt--;
-            int yutNum = yut.throwYut();
-            currentPlayer.yutNums.add(yutNum);
-            if(yutNum < 4){
-                currentPlayer.phase = Phase.CHOOSE_PIECE_PHASE;
-            }
-
-        }
+        selectYutClickEvent(yut.throwYut());
     }
 
     public void selectYutClickEvent(int select){
         Player currentPlayer = players.get(turn);
-        if(currentPlayer.phase == Phase.THROW_YUT_PHASE){
-            currentPlayer.throwCnt--;
+        boolean cannotMoveFlag = true;
+        if(currentPlayer.phase == Phase.THROW_YUT_PHASE && currentPlayer.throwCnt > 0){
             int yutNum = select;
             currentPlayer.yutNums.add(yutNum);
             if(yutNum < 4){
                 currentPlayer.phase = Phase.CHOOSE_PIECE_PHASE;
+                currentPlayer.throwCnt--;
+            }
+            if(yutNum == -1) {
+                for (GamePiece piece : currentPlayer.gamePieces) {
+                    if (piece.getNode().nodeID != 0)
+                        cannotMoveFlag = false;
+                }
+                if(cannotMoveFlag){
+                    changeTurn();
+                }
             }
         }
     }
     /*아직 보드에 올라가지 않은 게임말이 클릭되었을 때*/
     public void pieceOutsideBoardClickEvent(GamePiece gamePiece){
+        if(gamePiece.getNode() != gameBoard.nodes[0])
+            return;
         Player currentPlayer = gamePiece.owner;
         if(currentPlayer.playerID == turn){
             if(currentPlayer.phase == Phase.CHOOSE_PIECE_PHASE) {
@@ -135,31 +138,52 @@ public class GameModel extends Observable {
                 /*완주하는 경우*/
 
                 /*그냥 이동하는 경우*/
+                /*piece.move 했더니 concurrencyError 에러 발생함*/
                 if(node.getGamePiecesOn() == null || node.getGamePiecesOn().size() < 1){
                     /*그냥 이동하는 경우*/
-c                    for(GamePiece piece : selectedPieces){
-                        piece.move(node);
+                    Node nodeBefore = selectedPieces.get(0).getNode();
+                    for(GamePiece piece : selectedPieces){
+                        node.getGamePiecesOn().add(piece);
+                        piece.setNode(node);
                     }
+                    nodeBefore.getGamePiecesOn().clear();
                 }
                 /*업는 경우*/
                 else if(node.getGamePiecesOn().get(0).owner == currentPlayer){
+                    Node nodeBefore = selectedPieces.get(0).getNode();
                     for(GamePiece piece : selectedPieces){
-                        piece.move(node);
+                        node.getGamePiecesOn().add(piece);
+                        piece.setNode(node);
                     }
+                    nodeBefore.getGamePiecesOn().clear();
                 }
                 /*상대의 말을 잡은 경우*/
                 else if(node.getGamePiecesOn().get(0).owner != currentPlayer){
                     ArrayList<GamePiece> caughtPieces = node.getGamePiecesOn();
                     for(GamePiece caughtPiece : caughtPieces){
-                        caughtPiece.caught();
+                        caughtPiece.setNode(gameBoard.nodes[0]);
                     }
-                    for(GamePiece piece : selectedPieces) {
-                        piece.move(node);
+                    node.getGamePiecesOn().clear();
+
+                    Node nodeBefore = selectedPieces.get(0).getNode();
+                    for(GamePiece piece : selectedPieces){
+                        node.getGamePiecesOn().add(piece);
+                        piece.setNode(node);
                     }
+                    nodeBefore.getGamePiecesOn().clear();
+                    currentPlayer.throwCnt++;
                 }
+
+                /*움직이고 나서*/
                 selectedPieces = null;
                 if(currentPlayer.throwCnt == 0 && currentPlayer.yutNums.size() == 0){
                     changeTurn();
+                }
+                else if (currentPlayer.throwCnt > 0 && currentPlayer.yutNums.size() == 0){
+                    currentPlayer.phase = Phase.THROW_YUT_PHASE;
+                }
+                else if (currentPlayer.throwCnt == 0 && currentPlayer.yutNums.size() > 0){
+                    currentPlayer.phase = Phase.CHOOSE_PIECE_PHASE;
                 }
             }
             /*이동할 수 없는 칸인 경우 또는 자기 자신을 한번 더 클릭한 경우*/
@@ -179,6 +203,7 @@ c                    for(GamePiece piece : selectedPieces){
         players.get(turn).startTurn();
     }
 
+    /*안씀*/
     void makeOneStep() {
         setChanged();
         notifyObservers();
